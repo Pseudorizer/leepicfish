@@ -1,15 +1,13 @@
 import 'dotenv/config';
 import {Client, GatewayIntentBits} from 'discord.js';
-import {Player, QueryType} from 'discord-player';
 import {createAudioPlayer, joinVoiceChannel} from '@discordjs/voice';
+import env from './getEnv.js';
 
 console.debug('Starting bot...');
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildMessages],
 });
-
-const player = new Player(client);
 
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) {
@@ -31,7 +29,7 @@ client.on('interactionCreate', async interaction => {
 
       const vc = joinVoiceChannel({
         channelId: k.voice.channelId ?? '',
-        guildId: process.env.GUILDID ?? '',
+        guildId: env.guildId,
         adapterCreator: guild.voiceAdapterCreator,
       });
 
@@ -42,12 +40,6 @@ client.on('interactionCreate', async interaction => {
           await interaction.reply({ content: 'Song argument not found', ephemeral: true });
           return;
         }
-
-        const d = await player
-          .search(song, {
-            requestedBy: interaction.user,
-            searchEngine: QueryType.AUTO,
-          });
 
         await interaction.reply(`Playing ${interaction.options.getString('song')}`);
       } else if (interaction.options.getSubcommand() === 'pause') {
@@ -63,6 +55,6 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-await client.login(process.env.TOKEN);
+await client.login(env.token);
 
 console.debug('Bot started!');

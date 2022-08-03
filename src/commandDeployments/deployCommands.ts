@@ -2,15 +2,16 @@ import 'dotenv/config';
 import {Routes} from 'discord.js';
 import {REST} from '@discordjs/rest';
 import musicCommands from './musicCommands.js';
+import env from '../getEnv.js';
 
 const commands = [
   musicCommands,
 ].map(command => command.toJSON());
 
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN ?? '');
+const rest = new REST({ version: '10' }).setToken(env.token);
 
 try {
-  await rest.put(Routes.applicationGuildCommands(process.env.CLIENTID ?? '', process.env.GUILDID ?? ''),
+  await rest.put(Routes.applicationGuildCommands(env.clientId, env.guildId),
     { body: commands });
 } catch (exception) {
   console.debug(`Slash Command Error: ${exception}`);

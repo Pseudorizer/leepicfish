@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "dev": "nodemon --watch src/** --ext 'ts' --exec 'ts-node --swc --esm src/index.ts'",
-    "deployCommands": "ts-node --swc --esm src/deployCommands.ts"
+    "run": "ts-node --swc --esm src/index.ts",
+    "dev": "nodemon --watch src/** --ext 'ts' --exec 'pnpm run run'",
+    "deployCommands": "ts-node --swc --esm src/commandDeployments/deployCommands.ts",
+    "prod": "pnpm run deployCommands && pnpm run run"
   },
-  "author": "Emily",
+  "author": "Emily Medhurst",
   "license": "MIT",
   "type": "module",
   "dependencies": {
