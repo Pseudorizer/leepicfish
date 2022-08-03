@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import {Client, GatewayIntentBits} from 'discord.js';
 import {createAudioPlayer, joinVoiceChannel} from '@discordjs/voice';
 import env from './getEnv.js';

@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "run": "ts-node --swc --esm src/index.ts",
+    "run": "ts-node -r dotenv/config -r tsconfig-paths/register --swc --esm src/index.ts",
     "dev": "nodemon --watch src/** --ext 'ts' --exec 'pnpm run run'",
-    "deployCommands": "ts-node --swc --esm src/commandDeployments/deployCommands.ts",
+    "deployCommands": "ts-node -r dotenv/config -r tsconfig-paths/register --swc --esm src/commandDeployments/deployCommands.ts",
     "prod": "pnpm run deployCommands && pnpm run run"
   },
   "author": "Emily Medhurst",

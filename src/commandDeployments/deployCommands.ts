@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import {Routes} from 'discord.js';
 import {REST} from '@discordjs/rest';
 import musicCommands from './musicCommands.js';
