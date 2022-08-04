@@ -4,7 +4,9 @@ export type Env = {
   clientId: string,
 }
 
-const getEnvVariable = (name: string, env?: string) => {
+const getEnvVariable = (name: string) => {
+  const env = process.env[name];
+
   if (!env) {
     console.error(`ENV Variable ${name} not found`);
     process.exit(1);
@@ -13,9 +15,9 @@ const getEnvVariable = (name: string, env?: string) => {
   return env;
 };
 
-const TOKEN = getEnvVariable('TOKEN', process.env.TOKEN);
-const CLIENT_ID = getEnvVariable('CLIENT_ID', process.env.CLIENT_ID);
-const GUILD_ID = getEnvVariable('GUILD_ID', process.env.GUILD_ID);
+const TOKEN = getEnvVariable('TOKEN');
+const CLIENT_ID = getEnvVariable('CLIENT_ID');
+const GUILD_ID = getEnvVariable('GUILD_ID');
 
 export default {
   token: TOKEN,
