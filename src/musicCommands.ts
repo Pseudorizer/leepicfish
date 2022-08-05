@@ -10,6 +10,7 @@ import ytsr, {Video} from 'ytsr';
 import ytdl from 'ytdl-core';
 import {clear, dequeue, enqueue, getQueue, setCurrent, toggleRepeat} from './queue.js';
 import {client} from './index.js';
+import env from 'src/getEnv';
 
 const audioPlayer = createAudioPlayer();
 let currentAudioResource: AudioResource;
@@ -78,9 +79,9 @@ audioPlayer.on('stateChange', async (oldState, newState) => {
     const next = dequeue();
 
     if (next) {
-      const channel = await client.channels.fetch('733636237826719814') as TextChannel;
+      const channel = await client.channels.fetch(env.commandChannelId) as TextChannel;
       await play(next, async (message) => {
-        if (typeof message === 'string') {
+        if (typeof message === 'string' || message instanceof MessagePayload) {
           await channel.send(message);
         }
       });
@@ -94,6 +95,10 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
   }
 
   const vc = getVc(interaction.member as GuildMember, interaction.guild, audioPlayer);
+
+  const interactionCallback: Interaction = async (message) => {
+    await interaction.followUp(message);
+  };
 
   if (subcommandGroup === 'controls') {
     if (vc.state.status === 'disconnected') {
@@ -113,9 +118,7 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
 
         await interaction.reply({ content: 'Starting...', ephemeral: true });
 
-        await play(query, async (message) => {
-          await interaction.followUp(message);
-        });
+        await play(query, interactionCallback);
       } else if (subcommand === 'pause') {
         audioPlayer.pause();
         await interaction.reply({ content: 'Paused', ephemeral: true });
@@ -125,9 +128,7 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
         const next = dequeue();
 
         if (next) {
-          await play(next, async (message) => {
-            await interaction.followUp(message);
-          });
+          await play(next, interactionCallback);
         } else {
           await interaction.followUp('There are no more songs in the queue');
         }
