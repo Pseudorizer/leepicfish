@@ -1,6 +1,12 @@
 import {ChatInputCommandInteraction, Client, GatewayIntentBits, Guild, GuildMember} from 'discord.js';
 import env from './getEnv.js';
-import {createAudioPlayer, createAudioResource, getVoiceConnection, joinVoiceChannel} from '@discordjs/voice';
+import {
+  AudioResource,
+  createAudioPlayer,
+  createAudioResource,
+  getVoiceConnection,
+  joinVoiceChannel,
+} from '@discordjs/voice';
 import ytdl from 'ytdl-core';
 import ytsr, {Video} from 'ytsr';
 
@@ -11,6 +17,8 @@ const client = new Client({
 });
 
 const audioPlayer = createAudioPlayer();
+let currentAudioResource: AudioResource;
+let volume = 1;
 
 const getVc = (targetMember: GuildMember, guild: Guild) => {
   let vc = getVoiceConnection(guild.id);
@@ -33,10 +41,11 @@ const stream = async (url: string, interaction: ChatInputCommandInteraction) => 
 
   await interaction.followUp('Starting stream...');
 
-  const audioResource = createAudioResource(ytdl(url, {
+  currentAudioResource = createAudioResource(ytdl(url, {
     format: format,
-  }));
-  audioPlayer.play(audioResource);
+  }), { inlineVolume: true });
+  currentAudioResource.volume?.setVolume(volume);
+  audioPlayer.play(currentAudioResource);
 
   return url;
 };
@@ -73,7 +82,6 @@ client.on('interactionCreate', async interaction => {
   console.debug(interaction.commandName, interaction.options.getSubcommandGroup(), interaction.options.getSubcommand());
 
   const vc = getVc(interaction.member as GuildMember, interaction.guild);
-
 
   if (interaction.commandName === 'music') {
     if (interaction.options.getSubcommandGroup() === 'controls') {
@@ -112,6 +120,30 @@ client.on('interactionCreate', async interaction => {
         } else if (interaction.options.getSubcommand() === 'unpause') {
           audioPlayer.unpause();
           await interaction.reply({ content: 'Unpaused', ephemeral: true });
+        } else if (interaction.options.getSubcommand() === 'vol-down') {
+          const amount = (interaction.options.getInteger('amount', false) ?? 10) / 100;
+
+          if (volume - amount < 0) {
+            volume = 0
+            currentAudioResource.volume?.setVolume(0);
+          } else {
+            volume -= amount;
+            currentAudioResource.volume?.setVolume(volume);
+          }
+
+          await interaction.reply({ content: 'Volume lowered', ephemeral: true });
+        } else if (interaction.options.getSubcommand() === 'vol-up') {
+          const amount = (interaction.options.getInteger('amount', false) ?? 10) / 100;
+
+          if (volume + amount > 1.5) {
+            volume = 1.5;
+            currentAudioResource.volume?.setVolume(1.5);
+          } else {
+            volume += amount;
+            currentAudioResource.volume?.setVolume(volume);
+          }
+
+          await interaction.reply({ content: 'Volume increased', ephemeral: true });
         }
       } else {
         console.error(`Unhandled status: ${vc.state.status}`);

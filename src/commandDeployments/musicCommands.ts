@@ -30,9 +30,27 @@ const musicCommands =
                 .setName('skip')
                 .setDescription('Skip the current song'),
             ).addSubcommand(subcommand =>
-              subcommand
-                .setName('unpause')
-                .setDescription('Unpause the song')),
+                subcommand
+                  .setName('unpause')
+                  .setDescription('Unpause the song'))
+              .addSubcommand(subcommand =>
+                subcommand
+                  .setName('vol-down')
+                  .setDescription('Lower the volume, defaults to 10%')
+                  .addIntegerOption(option =>
+                    option
+                      .setName('amount')
+                      .setDescription('Amount to decrease by')
+                      .setMinValue(0)))
+              .addSubcommand(subcommand =>
+                subcommand
+                  .setName('vol-up')
+                  .setDescription('Increase the volume, defaults to 10%')
+                  .addIntegerOption(option =>
+                    option
+                      .setName('amount')
+                      .setDescription('Amount to increase by')
+                      .setMinValue(0))),
           ).addSubcommand(subcommand =>
             subcommand
               .setName('show-next')
