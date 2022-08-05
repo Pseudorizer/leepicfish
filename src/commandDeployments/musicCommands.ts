@@ -4,6 +4,10 @@ const musicCommands =
         new SlashCommandBuilder()
           .setName('music')
           .setDescription('A music player')
+          .addSubcommand(subcommand =>
+            subcommand
+              .setName('join')
+              .setDescription('Have the bot join your current vc'))
           .addSubcommandGroup(subcommandGroup =>
             subcommandGroup
               .setName('controls')
@@ -25,7 +29,10 @@ const musicCommands =
               subcommand
                 .setName('skip')
                 .setDescription('Skip the current song'),
-            ),
+            ).addSubcommand(subcommand =>
+              subcommand
+                .setName('unpause')
+                .setDescription('Unpause the song')),
           ).addSubcommand(subcommand =>
             subcommand
               .setName('show-next')
@@ -39,6 +46,10 @@ const musicCommands =
           .addSubcommand(subcommand =>
             subcommand
               .setName('leave')
-              .setDescription('Make the bot leave the current voice channel'));
+              .setDescription('Make the bot leave the current voice channel'))
+          .addSubcommand(subcommand =>
+            subcommand
+              .setName('status')
+              .setDescription('See current status of the music player'));
 
 export default musicCommands;

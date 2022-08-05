@@ -13,8 +13,8 @@ try {
   await rest.put(Routes.applicationGuildCommands(env.clientId, env.guildId),
     { body: commands });
 } catch (exception) {
-  console.debug(`Slash Command Error: ${exception}`);
+  console.log(`Slash Command Error: ${exception}`);
   process.exit(1);
 }
 
-console.debug('Slash commands registered');
+console.log('Slash commands registered');
