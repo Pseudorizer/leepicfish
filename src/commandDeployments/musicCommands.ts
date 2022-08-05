@@ -18,8 +18,8 @@ const musicCommands =
                   .setDescription('Play or enqueue a song')
                   .addStringOption(option =>
                     option
-                      .setName('song')
-                      .setDescription('Youtube URL of the song to play')
+                      .setName('query')
+                      .setDescription('Can be a search query or a Youtube URL')
                       .setRequired(true)),
               ).addSubcommand(subcommand =>
               subcommand
@@ -50,7 +50,24 @@ const musicCommands =
                     option
                       .setName('amount')
                       .setDescription('Amount to increase by')
-                      .setMinValue(0))),
+                      .setMinValue(0)))
+              .addSubcommand(subcommand =>
+                subcommand
+                  .setName('stop')
+                  .setDescription('Stop the current song'))
+              .addSubcommand(subcommand =>
+                subcommand
+                  .setName('enqueue')
+                  .setDescription('Enqueue a song to be played')
+                  .addStringOption(option =>
+                    option
+                      .setName('query')
+                      .setDescription('Can be a search query or a Youtube URL')
+                      .setRequired(true)))
+              .addSubcommand(subcommand =>
+                subcommand
+                  .setName('repeat-song')
+                  .setDescription('Toggle repeating the current song')),
           ).addSubcommand(subcommand =>
             subcommand
               .setName('show-next')
@@ -68,6 +85,10 @@ const musicCommands =
           .addSubcommand(subcommand =>
             subcommand
               .setName('status')
-              .setDescription('See current status of the music player'));
+              .setDescription('See current status of the music player'))
+          .addSubcommand(subcommand =>
+            subcommand
+              .setName('queue')
+              .setDescription('See the current queue'));
 
 export default musicCommands;
