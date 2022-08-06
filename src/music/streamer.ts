@@ -4,25 +4,34 @@ import {getFromSearchCache, updateSearchCache} from './queue.js';
 import ytsr, {Video} from 'ytsr';
 import {InteractionReplyOptions, MessagePayload} from 'discord.js';
 import {volume} from './musicCommands.js';
+import {isUrl} from './utils.js';
 
 export type Interaction = (message: string | MessagePayload | InteractionReplyOptions) => Promise<void>
 
 export const audioPlayer = createAudioPlayer();
-export let currentAudioResource: AudioResource;
+export let currentAudioResource: AudioResource | undefined;
+export let currentAudioResourceLength: number | undefined;
+export let currentAudioResourceTitle: string | undefined;
 
-export const stream = async (url: string, interaction: Interaction) => {
+export const startDownload = async (url: string) => {
   const info = await ytdl.getInfo(url);
+
+  currentAudioResourceLength = Number.parseInt(info.videoDetails.lengthSeconds) * 1000;
+  currentAudioResourceTitle = info.videoDetails.title;
+
   const format = ytdl.chooseFormat(info.formats, { filter: 'audioonly', quality: 251 });
 
+  return ytdl(url, {
+    format: format,
+  });
+};
+
+export const stream = async (url: string, interaction: Interaction) => {
   await interaction('Starting stream...');
 
-  currentAudioResource = createAudioResource(ytdl(url, {
-    format: format,
-  }), { inlineVolume: true });
+  currentAudioResource = createAudioResource(await startDownload(url), { inlineVolume: true });
   currentAudioResource.volume?.setVolume(volume);
   audioPlayer.play(currentAudioResource);
-
-  return url;
 };
 
 export const search = async (query: string, interaction: Interaction, cacheEnabled: boolean) => {
@@ -32,7 +41,7 @@ export const search = async (query: string, interaction: Interaction, cacheEnabl
     const cachedResult = getFromSearchCache(query);
 
     if (cachedResult) {
-      return await stream(cachedResult, interaction);
+      return cachedResult;
     }
   }
 
@@ -58,17 +67,20 @@ export const search = async (query: string, interaction: Interaction, cacheEnabl
     updateSearchCache(query, searchResults[0].url);
   }
 
-  return await stream(searchResults[0].url, interaction);
+  return searchResults[0].url;
 };
 
 export const play = async (url: string, interaction: Interaction, cacheEnabled: boolean) => {
-  let finalUrl;
+  let finalUrl: string | undefined = url;
 
-  if (/^((?:https?:)?\/\/)?((?:www|m)\.)?(youtube(-nocookie)?\.com|youtu.be)(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/.test(
-    url)) {
-    finalUrl = await stream(url, interaction);
+  if (isUrl(url)) {
+    await stream(url, interaction);
   } else {
     finalUrl = await search(url, interaction, cacheEnabled);
+
+    if (finalUrl) {
+      await stream(finalUrl, interaction);
+    }
   }
 
   if (finalUrl) {

@@ -1,20 +1,15 @@
-import {
-  ChatInputCommandInteraction, GuildMember, MessagePayload, TextChannel,
-
-} from 'discord.js';
-import {VoiceConnection} from '@discordjs/voice';
+import {ChatInputCommandInteraction, EmbedBuilder, GuildMember, MessagePayload, TextChannel} from 'discord.js';
+import {AudioPlayerStatus, VoiceConnection} from '@discordjs/voice';
 import {joinVc} from './utils.js';
+import {clear, clearSearchCache, dequeue, enqueue, getQueue, getRepeat, setCurrent, toggleRepeat} from './queue.js';
 import {
-  clear,
-  clearSearchCache,
-  dequeue,
-  enqueue,
-  getQueue,
-  setCurrent,
-  toggleRepeat,
-
-} from './queue.js';
-import {audioPlayer, currentAudioResource, Interaction, play} from './streamer.js';
+  audioPlayer,
+  currentAudioResource,
+  currentAudioResourceLength,
+  currentAudioResourceTitle,
+  Interaction,
+  play,
+} from './streamer.js';
 import {client} from '../index.js';
 import env from '../getEnv.js';
 
@@ -22,7 +17,7 @@ let cacheEnabled = true;
 export let volume = 1;
 
 audioPlayer.on('stateChange', async (oldState, newState) => {
-  if (oldState.status === 'playing' && newState.status === 'idle') {
+  if (oldState.status === AudioPlayerStatus.Playing && newState.status === AudioPlayerStatus.Idle) {
     const next = dequeue();
 
     if (next) {
@@ -81,10 +76,10 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
 
       if (volume - amount < 0) {
         volume = 0;
-        currentAudioResource.volume?.setVolume(0);
+        currentAudioResource?.volume?.setVolume(0);
       } else {
         volume -= amount;
-        currentAudioResource.volume?.setVolume(volume);
+        currentAudioResource?.volume?.setVolume(volume);
       }
 
       await interaction.reply({ content: `Volume decreased to ${volume * 100}%`, ephemeral: true });
@@ -93,10 +88,10 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
 
       if (volume + amount > 1.5) {
         volume = 1.5;
-        currentAudioResource.volume?.setVolume(1.5);
+        currentAudioResource?.volume?.setVolume(1.5);
       } else {
         volume += amount;
-        currentAudioResource.volume?.setVolume(volume);
+        currentAudioResource?.volume?.setVolume(volume);
       }
 
       await interaction.reply({ content: `Volume increased to ${volume * 100}%`, ephemeral: true });
@@ -104,7 +99,7 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
       toggleRepeat(false);
       clear();
       audioPlayer.stop();
-      await interaction.reply('Audio stopped');
+      await interaction.reply({ content: 'Stopped', ephemeral: true });
     } else if (subcommand === 'enqueue') {
       const query = interaction.options.getString('query');
 
@@ -121,14 +116,22 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
     } else if (subcommand === 'leave') {
       vc.destroy(true);
       await interaction.reply('Bot left!');
+    } else if (subcommand === 'start-queue') {
+      const next = dequeue();
+
+      if (next) {
+        await play(next, interactionCallback, cacheEnabled);
+      } else {
+        await interaction.followUp('There are no songs in the queue');
+      }
+    } else if (subcommand === 'join') {
+      await interaction.reply('I have arrived');
     }
   };
 
   const onReady = async () => {
     if (subcommand === 'show-next') {
       await interaction.reply(`Showing the next ${interaction.options.getInteger('amount', false) ?? 1} songs`);
-    } else if (subcommand === 'join') {
-      await interaction.reply('I have arrived');
     } else if (subcommand === 'queue') {
       await interaction.reply(getQueue());
     } else if (subcommand === 'toggle-search-cache') {
@@ -144,6 +147,57 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
       } else {
         await interaction.reply('Search cache cleared');
       }
+    } else if (subcommand === 'status') {
+      let playStatus;
+
+      if (audioPlayer.state.status === AudioPlayerStatus.Playing) {
+        playStatus = ':arrow_forward:';
+      } else if (audioPlayer.state.status === AudioPlayerStatus.Paused) {
+        playStatus = ':pause_button:';
+      } else if (audioPlayer.state.status === AudioPlayerStatus.Idle) {
+        playStatus = ':stop_button:';
+      } else if (audioPlayer.state.status === AudioPlayerStatus.Buffering) {
+        playStatus = ':arrows_counterclockwise:';
+      } else {
+        playStatus = ':question:';
+      }
+
+      let volumeStatus;
+
+      if (volume >= .8) {
+        volumeStatus = ':loud_sound:';
+      } else if (volume >= .2) {
+        volumeStatus = ':sound:';
+      } else {
+        volumeStatus = ':mute:';
+      }
+
+      let duration = '00:00';
+      let totalTime = '00:00';
+      let progress = '[-------------------]';
+
+      if (currentAudioResource?.playbackDuration) {
+        duration = new Date(currentAudioResource?.playbackDuration ?? 0).toLocaleTimeString('en-GB',
+          { minute: '2-digit', second: '2-digit' });
+      }
+
+      if (currentAudioResourceLength) {
+        totalTime = new Date(currentAudioResourceLength ?? 0).toLocaleTimeString('en-GB',
+          { minute: '2-digit', second: '2-digit' });
+      }
+
+      if (currentAudioResource?.playbackDuration && currentAudioResourceLength) {
+        const played = Math.ceil((currentAudioResource.playbackDuration / currentAudioResourceLength) * 20);
+        const left = 20 - played;
+        progress = `[${'#'.repeat(played)}${'-'.repeat(left)}]`;
+      }
+
+      const statusEmbed = new EmbedBuilder()
+        .setTitle(`Playing - ${currentAudioResourceTitle ?? 'Nothing'} :musical_note:`)
+        .setDescription(`${playStatus} ${duration}/${totalTime} **${progress}** ${volumeStatus} **${volume *
+        100}%**${getRepeat() ? ' :arrows_counterclockwise:' : ''}`);
+
+      await interaction.reply({ embeds: [statusEmbed], ephemeral: true });
     }
   };
 

@@ -19,13 +19,17 @@ export const dequeue = () => {
 };
 
 export const toggleRepeat = (override?: boolean) => {
-  if (override) {
+  if (override !== undefined) {
     repeat = override;
   } else {
     repeat = !repeat;
   }
   return repeat;
 };
+
+export const getRepeat = () => {
+  return repeat;
+}
 
 export const setCurrent = (newCurrent: string) => {
   current = newCurrent;

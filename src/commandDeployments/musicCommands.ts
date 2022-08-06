@@ -76,7 +76,11 @@ const musicCommands =
               .addSubcommand(subcommand =>
                 subcommand
                   .setName('leave')
-                  .setDescription('Make the bot leave the current voice channel')),
+                  .setDescription('Make the bot leave the current voice channel'))
+              .addSubcommand(subcommand =>
+                subcommand
+                  .setName('start-queue')
+                  .setDescription('Starts the current queue from the beginning')),
           ).addSubcommand(subcommand =>
             subcommand
               .setName('show-next')

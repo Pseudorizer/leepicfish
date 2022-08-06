@@ -32,3 +32,12 @@ export const joinVc = async (targetMember: GuildMember,
     });
   }
 };
+
+export const isUrl = (url?: string) => {
+  return url &&
+    (
+      // yt
+      /^((?:https?:)?\/\/)?((?:www|m)\.)?(youtube(-nocookie)?\.com|youtu.be)(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/.test(
+        url)
+    );
+};
