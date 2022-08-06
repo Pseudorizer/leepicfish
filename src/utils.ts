@@ -1,7 +1,16 @@
-import {AudioPlayer, getVoiceConnection, joinVoiceChannel} from '@discordjs/voice';
+import {
+  AudioPlayer,
+  getVoiceConnection,
+  joinVoiceChannel,
+  VoiceConnection,
+  VoiceConnectionStatus,
+} from '@discordjs/voice';
 import {Guild, GuildMember} from 'discord.js';
 
-export const getVc = (targetMember: GuildMember, guild: Guild, audioPlayer: AudioPlayer) => {
+export const joinVc = async (targetMember: GuildMember,
+  guild: Guild,
+  audioPlayer: AudioPlayer,
+  onReady: (vc: VoiceConnection) => Promise<void>) => {
   let vc = getVoiceConnection(guild.id);
 
   if (!vc) {
@@ -13,5 +22,13 @@ export const getVc = (targetMember: GuildMember, guild: Guild, audioPlayer: Audi
     vc.subscribe(audioPlayer);
   }
 
-  return vc;
-}
+  if (vc.state.status === VoiceConnectionStatus.Ready && vc) {
+    await onReady(vc);
+  } else {
+    vc.once(VoiceConnectionStatus.Ready, async () => {
+      if (vc) {
+        await onReady(vc);
+      }
+    });
+  }
+};

@@ -20,7 +20,12 @@ const musicCommands =
                     option
                       .setName('query')
                       .setDescription('Can be a search query or a Youtube URL')
-                      .setRequired(true)),
+                      .setRequired(true))
+                  .addBooleanOption(option =>
+                    option
+                      .setName('no-search-cache')
+                      .setDescription(
+                        'Disables the search cache used by the bot, useful if it found the wrong song when searching')),
               ).addSubcommand(subcommand =>
               subcommand
                 .setName('pause')
@@ -67,7 +72,11 @@ const musicCommands =
               .addSubcommand(subcommand =>
                 subcommand
                   .setName('repeat-song')
-                  .setDescription('Toggle repeating the current song')),
+                  .setDescription('Toggle repeating the current song'))
+              .addSubcommand(subcommand =>
+                subcommand
+                  .setName('leave')
+                  .setDescription('Make the bot leave the current voice channel')),
           ).addSubcommand(subcommand =>
             subcommand
               .setName('show-next')
@@ -80,15 +89,25 @@ const musicCommands =
                   .setMinValue(1)))
           .addSubcommand(subcommand =>
             subcommand
-              .setName('leave')
-              .setDescription('Make the bot leave the current voice channel'))
-          .addSubcommand(subcommand =>
-            subcommand
               .setName('status')
               .setDescription('See current status of the music player'))
           .addSubcommand(subcommand =>
             subcommand
               .setName('queue')
-              .setDescription('See the current queue'));
+              .setDescription('See the current queue'))
+          .addSubcommand(subcommand =>
+            subcommand
+              .setName('toggle-search-cache')
+              .setDescription(
+                'Disables the searching cache used by the bot, useful if it found the wrong song when searching'))
+          .addSubcommand(subcommand =>
+            subcommand
+              .setName('clear-cache')
+              .setDescription('Clears the entire cache or for a specific query if supplied')
+              .addStringOption(option =>
+                option
+                  .setName('query')
+                  .setDescription('The search query to clear from the cache'),
+              ));
 
 export default musicCommands;

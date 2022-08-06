@@ -1,4 +1,5 @@
 let queue: string[] = [];
+let cache: Record<string, string> = {};
 
 let repeat = false;
 let current: string | undefined;
@@ -30,12 +31,29 @@ export const toggleRepeat = (override?: boolean) => {
 
 export const setCurrent = (newCurrent: string) => {
   current = newCurrent;
-}
+};
 
 export const getQueue = () => {
   return queue.map((item, index) => `${index}. ${item}`).join(' ');
-}
+};
 
 export const clear = () => {
   queue = [];
-}
+  current = '';
+};
+
+export const getFromCache = (query: string): string | undefined => {
+  return cache[query.toLowerCase().trim()];
+};
+
+export const updateCache = (query: string, url: string) => {
+  cache[query.toLowerCase().trim()] = url;
+};
+
+export const clearCache = (query?: string | null) => {
+  if (query) {
+    delete cache[query.toLowerCase().trim()];
+  } else {
+    cache = {};
+  }
+};

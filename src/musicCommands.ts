@@ -4,17 +4,28 @@ import {
   MessagePayload,
   TextChannel,
 } from 'discord.js';
-import {AudioResource, createAudioPlayer, createAudioResource} from '@discordjs/voice';
-import {getVc} from './utils.js';
+import {AudioResource, createAudioPlayer, createAudioResource, VoiceConnection} from '@discordjs/voice';
+import {joinVc} from './utils.js';
 import ytsr, {Video} from 'ytsr';
 import ytdl from 'ytdl-core';
-import {clear, dequeue, enqueue, getQueue, setCurrent, toggleRepeat} from './queue.js';
+import {
+  clear,
+  clearCache,
+  dequeue,
+  enqueue,
+  getFromCache,
+  getQueue,
+  setCurrent,
+  toggleRepeat,
+  updateCache,
+} from './queue.js';
 import {client} from './index.js';
-import env from 'src/getEnv';
+import env from './getEnv.js';
 
 const audioPlayer = createAudioPlayer();
 let currentAudioResource: AudioResource;
 let volume = 1;
+let cacheEnabled = true;
 
 type Interaction = (message: string | MessagePayload | InteractionReplyOptions) => Promise<void>
 
@@ -33,8 +44,16 @@ const stream = async (url: string, interaction: Interaction) => {
   return url;
 };
 
-const search = async (query: string, interaction: Interaction) => {
+const search = async (query: string, interaction: Interaction, cacheEnabled: boolean) => {
   await interaction('Searching...');
+
+  if (cacheEnabled) {
+    const cachedResult = getFromCache(query);
+
+    if (cachedResult) {
+      return await stream(cachedResult, interaction);
+    }
+  }
 
   const filterSearch = await ytsr.getFilters(query);
   const filters = filterSearch.get('Type')?.get('Video');
@@ -54,17 +73,21 @@ const search = async (query: string, interaction: Interaction) => {
 
   await interaction('Found some results');
 
+  if (cacheEnabled) {
+    updateCache(query, searchResults[0].url);
+  }
+
   return await stream(searchResults[0].url, interaction);
 };
 
-const play = async (url: string, interaction: Interaction) => {
+const play = async (url: string, interaction: Interaction, cacheEnabled: boolean) => {
   let finalUrl;
 
   if (/^((?:https?:)?\/\/)?((?:www|m)\.)?(youtube(-nocookie)?\.com|youtu.be)(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/.test(
     url)) {
     finalUrl = await stream(url, interaction);
   } else {
-    finalUrl = await search(url, interaction);
+    finalUrl = await search(url, interaction, cacheEnabled);
   }
 
   if (finalUrl) {
@@ -84,7 +107,7 @@ audioPlayer.on('stateChange', async (oldState, newState) => {
         if (typeof message === 'string' || message instanceof MessagePayload) {
           await channel.send(message);
         }
-      });
+      }, cacheEnabled);
     }
   }
 });
@@ -94,105 +117,116 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
     return;
   }
 
-  const vc = getVc(interaction.member as GuildMember, interaction.guild, audioPlayer);
+  const onVcReady = async (vc: VoiceConnection) => {
+    const interactionCallback: Interaction = async (message) => {
+      await interaction.followUp(message);
+    };
 
-  const interactionCallback: Interaction = async (message) => {
-    await interaction.followUp(message);
-  };
+    if (subcommand === 'play') {
+      const query = interaction.options.getString('query');
+      const noCache = !(interaction.options.getBoolean('no-search-cache', false) ?? false) && cacheEnabled;
 
-  if (subcommandGroup === 'controls') {
-    if (vc.state.status === 'disconnected') {
-      await interaction.reply('You must have me join a VC first');
-    } else if (vc.state.status === 'connecting' || vc.state.status === 'signalling') {
-      await interaction.reply('I\'m still connecting hold the fuck on...');
-    } else if (vc.state.status === 'ready') {
-      if (subcommand === 'play') {
-        const query = interaction.options.getString('query');
-
-        if (!query) {
-          await interaction.reply({ content: 'Query argument not found', ephemeral: true });
-          return;
-        }
-
-        setCurrent(query);
-
-        await interaction.reply({ content: 'Starting...', ephemeral: true });
-
-        await play(query, interactionCallback);
-      } else if (subcommand === 'pause') {
-        audioPlayer.pause();
-        await interaction.reply({ content: 'Paused', ephemeral: true });
-      } else if (subcommand === 'skip') {
-        await interaction.reply('Skipping...');
-
-        const next = dequeue();
-
-        if (next) {
-          await play(next, interactionCallback);
-        } else {
-          await interaction.followUp('There are no more songs in the queue');
-        }
-      } else if (subcommand === 'unpause') {
-        audioPlayer.unpause();
-        await interaction.reply({ content: 'Unpaused', ephemeral: true });
-      } else if (subcommand === 'vol-down') {
-        const amount = (interaction.options.getInteger('amount', false) ?? 10) / 100;
-
-        if (volume - amount < 0) {
-          volume = 0;
-          currentAudioResource.volume?.setVolume(0);
-        } else {
-          volume -= amount;
-          currentAudioResource.volume?.setVolume(volume);
-        }
-
-        await interaction.reply({ content: `Volume decreased to ${volume * 100}%`, ephemeral: true });
-      } else if (subcommand === 'vol-up') {
-        const amount = (interaction.options.getInteger('amount', false) ?? 10) / 100;
-
-        if (volume + amount > 1.5) {
-          volume = 1.5;
-          currentAudioResource.volume?.setVolume(1.5);
-        } else {
-          volume += amount;
-          currentAudioResource.volume?.setVolume(volume);
-        }
-
-        await interaction.reply({ content: `Volume increased to ${volume * 100}%`, ephemeral: true });
-      } else if (subcommand === 'stop') {
-        toggleRepeat(false);
-        clear();
-        audioPlayer.stop();
-        await interaction.reply('Audio stopped');
-      } else if (subcommand === 'enqueue') {
-        const query = interaction.options.getString('query');
-
-        if (!query) {
-          await interaction.reply({ content: 'Query argument not found', ephemeral: true });
-          return;
-        }
-
-        enqueue(query);
-        await interaction.reply('Song enqueued');
-      } else if (subcommand === 'repeat-song') {
-        const current = toggleRepeat();
-        await interaction.reply(`Repeat ${current ? 'enabled' : 'disabled'}`);
+      if (!query) {
+        await interaction.reply({ content: 'Query argument not found', ephemeral: true });
+        return;
       }
-    } else {
-      console.error(`Unhandled status: ${vc.state.status}`);
-      await interaction.reply('idk what\'s going on rn');
-    }
-  } else {
-    if (subcommand === 'show-next') {
-      await interaction.reply(`Showing the next ${interaction.options.getInteger('amount', false) ?? 1} songs`);
+
+      setCurrent(query);
+
+      await interaction.reply({ content: 'Starting...', ephemeral: true });
+
+      await play(query, interactionCallback, noCache);
+    } else if (subcommand === 'pause') {
+      audioPlayer.pause();
+      await interaction.reply({ content: 'Paused', ephemeral: true });
+    } else if (subcommand === 'skip') {
+      await interaction.reply('Skipping...');
+
+      const next = dequeue();
+
+      if (next) {
+        await play(next, interactionCallback, cacheEnabled);
+      } else {
+        await interaction.followUp('There are no more songs in the queue');
+      }
+    } else if (subcommand === 'unpause') {
+      audioPlayer.unpause();
+      await interaction.reply({ content: 'Unpaused', ephemeral: true });
+    } else if (subcommand === 'vol-down') {
+      const amount = (interaction.options.getInteger('amount', false) ?? 10) / 100;
+
+      if (volume - amount < 0) {
+        volume = 0;
+        currentAudioResource.volume?.setVolume(0);
+      } else {
+        volume -= amount;
+        currentAudioResource.volume?.setVolume(volume);
+      }
+
+      await interaction.reply({ content: `Volume decreased to ${volume * 100}%`, ephemeral: true });
+    } else if (subcommand === 'vol-up') {
+      const amount = (interaction.options.getInteger('amount', false) ?? 10) / 100;
+
+      if (volume + amount > 1.5) {
+        volume = 1.5;
+        currentAudioResource.volume?.setVolume(1.5);
+      } else {
+        volume += amount;
+        currentAudioResource.volume?.setVolume(volume);
+      }
+
+      await interaction.reply({ content: `Volume increased to ${volume * 100}%`, ephemeral: true });
+    } else if (subcommand === 'stop') {
+      toggleRepeat(false);
+      clear();
+      audioPlayer.stop();
+      await interaction.reply('Audio stopped');
+    } else if (subcommand === 'enqueue') {
+      const query = interaction.options.getString('query');
+
+      if (!query) {
+        await interaction.reply({ content: 'Query argument not found', ephemeral: true });
+        return;
+      }
+
+      enqueue(query);
+      await interaction.reply('Song enqueued');
+    } else if (subcommand === 'repeat-song') {
+      const current = toggleRepeat();
+      await interaction.reply(`Repeat is now ${current ? 'enabled' : 'disabled'}`);
     } else if (subcommand === 'leave') {
       vc.destroy(true);
       await interaction.reply('Bot left!');
+    }
+  };
+
+  const onReady = async () => {
+    if (subcommand === 'show-next') {
+      await interaction.reply(`Showing the next ${interaction.options.getInteger('amount', false) ?? 1} songs`);
     } else if (subcommand === 'join') {
       await interaction.reply('I have arrived');
     } else if (subcommand === 'queue') {
       await interaction.reply(getQueue());
+    } else if (subcommand === 'toggle-search-cache') {
+      cacheEnabled = !cacheEnabled;
+      await interaction.reply(`Search cache is now ${cacheEnabled ? 'enabled' : 'disabled'}`);
+    } else if (subcommand === 'clear-cache') {
+      const query = interaction.options.getString('query', false);
+
+      clearCache(query);
+
+      if (query) {
+        await interaction.reply(`Search cache entry for ${query} cleared`);
+      } else {
+        await interaction.reply('Search cache cleared');
+      }
     }
+  };
+
+  if (subcommandGroup === 'controls') {
+    await joinVc(interaction.member as GuildMember, interaction.guild, audioPlayer, onVcReady);
+  } else {
+    await onReady();
   }
 };
 
