@@ -1,101 +1,25 @@
 import {
-  ChatInputCommandInteraction, GuildMember,
-  InteractionReplyOptions,
-  MessagePayload,
-  TextChannel,
+  ChatInputCommandInteraction, GuildMember, MessagePayload, TextChannel,
+
 } from 'discord.js';
-import {AudioResource, createAudioPlayer, createAudioResource, VoiceConnection} from '@discordjs/voice';
+import {VoiceConnection} from '@discordjs/voice';
 import {joinVc} from './utils.js';
-import ytsr, {Video} from 'ytsr';
-import ytdl from 'ytdl-core';
 import {
   clear,
-  clearCache,
+  clearSearchCache,
   dequeue,
   enqueue,
-  getFromCache,
   getQueue,
   setCurrent,
   toggleRepeat,
-  updateCache,
+
 } from './queue.js';
-import {client} from './index.js';
-import env from './getEnv.js';
+import {audioPlayer, currentAudioResource, Interaction, play} from './streamer.js';
+import {client} from '../index.js';
+import env from '../getEnv.js';
 
-const audioPlayer = createAudioPlayer();
-let currentAudioResource: AudioResource;
-let volume = 1;
 let cacheEnabled = true;
-
-type Interaction = (message: string | MessagePayload | InteractionReplyOptions) => Promise<void>
-
-const stream = async (url: string, interaction: Interaction) => {
-  const info = await ytdl.getInfo(url);
-  const format = ytdl.chooseFormat(info.formats, { filter: 'audioonly', quality: 251 });
-
-  await interaction('Starting stream...');
-
-  currentAudioResource = createAudioResource(ytdl(url, {
-    format: format,
-  }), { inlineVolume: true });
-  currentAudioResource.volume?.setVolume(volume);
-  audioPlayer.play(currentAudioResource);
-
-  return url;
-};
-
-const search = async (query: string, interaction: Interaction, cacheEnabled: boolean) => {
-  await interaction('Searching...');
-
-  if (cacheEnabled) {
-    const cachedResult = getFromCache(query);
-
-    if (cachedResult) {
-      return await stream(cachedResult, interaction);
-    }
-  }
-
-  const filterSearch = await ytsr.getFilters(query);
-  const filters = filterSearch.get('Type')?.get('Video');
-
-  if (!filters?.url) {
-    await interaction('Failed to get filters');
-    return;
-  }
-
-  const initialSearchResults = await ytsr(filters.url);
-  const searchResults = initialSearchResults.items as Video[];
-
-  if (searchResults.length === 0) {
-    await interaction('No results found :(');
-    return;
-  }
-
-  await interaction('Found some results');
-
-  if (cacheEnabled) {
-    updateCache(query, searchResults[0].url);
-  }
-
-  return await stream(searchResults[0].url, interaction);
-};
-
-const play = async (url: string, interaction: Interaction, cacheEnabled: boolean) => {
-  let finalUrl;
-
-  if (/^((?:https?:)?\/\/)?((?:www|m)\.)?(youtube(-nocookie)?\.com|youtu.be)(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/.test(
-    url)) {
-    finalUrl = await stream(url, interaction);
-  } else {
-    finalUrl = await search(url, interaction, cacheEnabled);
-  }
-
-  if (finalUrl) {
-    await interaction(`Playing ${finalUrl}`);
-  }
-
-  return finalUrl;
-};
+export let volume = 1;
 
 audioPlayer.on('stateChange', async (oldState, newState) => {
   if (oldState.status === 'playing' && newState.status === 'idle') {
@@ -213,7 +137,7 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
     } else if (subcommand === 'clear-cache') {
       const query = interaction.options.getString('query', false);
 
-      clearCache(query);
+      clearSearchCache(query);
 
       if (query) {
         await interaction.reply(`Search cache entry for ${query} cleared`);

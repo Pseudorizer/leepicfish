@@ -1,5 +1,5 @@
 let queue: string[] = [];
-let cache: Record<string, string> = {};
+let searchCache: Record<string, string> = {};
 
 let repeat = false;
 let current: string | undefined;
@@ -8,14 +8,12 @@ export const enqueue = (query: string) => {
   queue.push(query);
 };
 
-export const dequeue = (amount = 1) => {
+export const dequeue = () => {
   if (repeat) {
     return current;
   }
 
-  for (let i = 0; i < amount; i++) {
-    current = queue.shift();
-  }
+  current = queue.shift();
 
   return current;
 };
@@ -42,18 +40,18 @@ export const clear = () => {
   current = '';
 };
 
-export const getFromCache = (query: string): string | undefined => {
-  return cache[query.toLowerCase().trim()];
+export const getFromSearchCache = (query: string): string | undefined => {
+  return searchCache[query.toLowerCase().trim()];
 };
 
-export const updateCache = (query: string, url: string) => {
-  cache[query.toLowerCase().trim()] = url;
+export const updateSearchCache = (query: string, url: string) => {
+  searchCache[query.toLowerCase().trim()] = url;
 };
 
-export const clearCache = (query?: string | null) => {
+export const clearSearchCache = (query?: string | null) => {
   if (query) {
-    delete cache[query.toLowerCase().trim()];
+    delete searchCache[query.toLowerCase().trim()];
   } else {
-    cache = {};
+    searchCache = {};
   }
 };

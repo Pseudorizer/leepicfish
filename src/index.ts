@@ -1,6 +1,6 @@
 import {Client, GatewayIntentBits} from 'discord.js';
 import env from './getEnv.js';
-import MusicCommands from './musicCommands.js';
+import MusicCommands from './music/musicCommands.js';
 
 console.log('Starting bot...');
 
