@@ -14,9 +14,13 @@ export const joinVc = async (targetMember: GuildMember,
   let vc = getVoiceConnection(guild.id);
 
   if (!vc) {
+    if (!targetMember.voice.channelId) {
+      return false;
+    }
+
     vc = joinVoiceChannel({
       guildId: guild.id,
-      channelId: targetMember.voice.channelId ?? '',
+      channelId: targetMember.voice.channelId,
       adapterCreator: guild.voiceAdapterCreator,
     });
     vc.subscribe(audioPlayer);
@@ -31,6 +35,8 @@ export const joinVc = async (targetMember: GuildMember,
       }
     });
   }
+
+  return true;
 };
 
 export const isUrl = (url?: string) => {

@@ -8,6 +8,16 @@ const musicCommands =
             subcommand
               .setName('join')
               .setDescription('Have the bot join your current vc'))
+          .addSubcommand(subcommand =>
+            subcommand
+              .setName('enqueue')
+              .setDescription('Enqueue a song or set of songs to be played')
+              .addStringOption(option =>
+                option
+                  .setName('query')
+                  .setDescription(
+                    'Can be a single search query or a Youtube URL or a comma seperated list (I.E. song1,song2')
+                  .setRequired(true)))
           .addSubcommandGroup(subcommandGroup =>
             subcommandGroup
               .setName('controls')
@@ -36,8 +46,8 @@ const musicCommands =
                 .setDescription('Skip the current song'),
             ).addSubcommand(subcommand =>
                 subcommand
-                  .setName('unpause')
-                  .setDescription('Unpause the song'))
+                  .setName('resume')
+                  .setDescription('Resume the paused song'))
               .addSubcommand(subcommand =>
                 subcommand
                   .setName('vol-down')
@@ -58,17 +68,19 @@ const musicCommands =
                       .setMinValue(0)))
               .addSubcommand(subcommand =>
                 subcommand
-                  .setName('stop')
-                  .setDescription('Stop the current song'))
+                  .setName('vol-set')
+                  .setDescription('Set the volume to a specific value')
+                  .addIntegerOption(option =>
+                    option
+                      .setName('volume')
+                      .setDescription('Volume between 0 and 150')
+                      .setMinValue(0)
+                      .setMaxValue(150)
+                      .setRequired(true)))
               .addSubcommand(subcommand =>
                 subcommand
-                  .setName('enqueue')
-                  .setDescription('Enqueue a song to be played')
-                  .addStringOption(option =>
-                    option
-                      .setName('query')
-                      .setDescription('Can be a search query or a Youtube URL')
-                      .setRequired(true)))
+                  .setName('stop')
+                  .setDescription('Stop the current song'))
               .addSubcommand(subcommand =>
                 subcommand
                   .setName('repeat-song')
@@ -83,21 +95,11 @@ const musicCommands =
                   .setDescription('Starts the current queue from the beginning')),
           ).addSubcommand(subcommand =>
             subcommand
-              .setName('show-next')
-              .setDescription('See what song is next')
-              .addIntegerOption(option =>
-                option
-                  .setName('amount')
-                  .setDescription('Number of upcoming songs to display, defaults to 1')
-                  .setMaxValue(5)
-                  .setMinValue(1)))
-          .addSubcommand(subcommand =>
-            subcommand
               .setName('status')
               .setDescription('See current status of the music player'))
           .addSubcommand(subcommand =>
             subcommand
-              .setName('queue')
+              .setName('show-queue')
               .setDescription('See the current queue'))
           .addSubcommand(subcommand =>
             subcommand
@@ -107,7 +109,7 @@ const musicCommands =
           .addSubcommand(subcommand =>
             subcommand
               .setName('clear-cache')
-              .setDescription('Clears the entire cache or for a specific query if supplied')
+              .setDescription('Clears the entire search cache or the cache for a specific query if supplied')
               .addStringOption(option =>
                 option
                   .setName('query')

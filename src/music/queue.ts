@@ -36,7 +36,7 @@ export const setCurrent = (newCurrent: string) => {
 };
 
 export const getQueue = () => {
-  return queue.map((item, index) => `${index}. ${item}`).join(' ');
+  return queue;
 };
 
 export const clear = () => {

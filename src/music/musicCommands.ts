@@ -13,6 +13,8 @@ import {
 import {client} from '../index.js';
 import env from '../getEnv.js';
 
+const EMBED_COLOUR = '#FF7B9C';
+
 let cacheEnabled = true;
 export let volume = 1;
 
@@ -68,15 +70,15 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
       } else {
         await interaction.followUp('There are no more songs in the queue');
       }
-    } else if (subcommand === 'unpause') {
+    } else if (subcommand === 'resume') {
       audioPlayer.unpause();
-      await interaction.reply({ content: 'Unpaused', ephemeral: true });
+      await interaction.reply({ content: 'Resumed', ephemeral: true });
     } else if (subcommand === 'vol-down') {
       const amount = (interaction.options.getInteger('amount', false) ?? 10) / 100;
 
       if (volume - amount < 0) {
         volume = 0;
-        currentAudioResource?.volume?.setVolume(0);
+        currentAudioResource?.volume?.setVolume(volume);
       } else {
         volume -= amount;
         currentAudioResource?.volume?.setVolume(volume);
@@ -88,28 +90,30 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
 
       if (volume + amount > 1.5) {
         volume = 1.5;
-        currentAudioResource?.volume?.setVolume(1.5);
+        currentAudioResource?.volume?.setVolume(volume);
       } else {
         volume += amount;
         currentAudioResource?.volume?.setVolume(volume);
       }
 
       await interaction.reply({ content: `Volume increased to ${volume * 100}%`, ephemeral: true });
+    } else if (subcommand === 'vol-set') {
+      const volumeQuery = interaction.options.getInteger('volume');
+
+      if (!volumeQuery) {
+        await interaction.reply({ content: 'Volume argument not found', ephemeral: true });
+        return;
+      }
+
+      volume = volumeQuery / 100;
+      currentAudioResource?.volume?.setVolume(volume);
+
+      await interaction.reply({ content: `Volume set to ${volume * 100}%`, ephemeral: true });
     } else if (subcommand === 'stop') {
       toggleRepeat(false);
       clear();
       audioPlayer.stop();
       await interaction.reply({ content: 'Stopped', ephemeral: true });
-    } else if (subcommand === 'enqueue') {
-      const query = interaction.options.getString('query');
-
-      if (!query) {
-        await interaction.reply({ content: 'Query argument not found', ephemeral: true });
-        return;
-      }
-
-      enqueue(query);
-      await interaction.reply('Song enqueued');
     } else if (subcommand === 'repeat-song') {
       const current = toggleRepeat();
       await interaction.reply(`Repeat is now ${current ? 'enabled' : 'disabled'}`);
@@ -130,10 +134,24 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
   };
 
   const onReady = async () => {
-    if (subcommand === 'show-next') {
-      await interaction.reply(`Showing the next ${interaction.options.getInteger('amount', false) ?? 1} songs`);
-    } else if (subcommand === 'queue') {
-      await interaction.reply(getQueue());
+    if (subcommand === 'queue') {
+      const queue = getQueue().slice(0, 5);
+
+      let embed;
+
+      if (queue.length === 0) {
+        embed = new EmbedBuilder()
+          .setTitle('Music Player Queue :musical_note:')
+          .setDescription('There are currently no songs in the queue')
+          .setColor(EMBED_COLOUR);
+      } else {
+        embed = new EmbedBuilder()
+          .setTitle('Music Player Queue :musical_note:')
+          .setDescription(queue.map((item, index) => `${index + 1}. ${item}`).join('\n'))
+          .setColor(EMBED_COLOUR);
+      }
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
     } else if (subcommand === 'toggle-search-cache') {
       cacheEnabled = !cacheEnabled;
       await interaction.reply(`Search cache is now ${cacheEnabled ? 'enabled' : 'disabled'}`);
@@ -195,14 +213,34 @@ const MusicCommands = async (interaction: ChatInputCommandInteraction, subcomman
       const statusEmbed = new EmbedBuilder()
         .setTitle(`Playing - ${currentAudioResourceTitle ?? 'Nothing'} :musical_note:`)
         .setDescription(`${playStatus} ${duration}/${totalTime} **${progress}** ${volumeStatus} **${volume *
-        100}%**${getRepeat() ? ' :arrows_counterclockwise:' : ''}`);
+        100}%**${getRepeat() ? ' :arrows_counterclockwise:' : ''}`)
+        .setColor(EMBED_COLOUR);
 
       await interaction.reply({ embeds: [statusEmbed], ephemeral: true });
+    } else if (subcommand === 'enqueue') {
+      const query = interaction.options.getString('query');
+
+      if (!query) {
+        await interaction.reply({ content: 'Query argument not found', ephemeral: true });
+        return;
+      }
+
+      const queries = query.split(',');
+
+      for (const query of queries) {
+        enqueue(query);
+      }
+
+      await interaction.reply({ content: 'Song(s) enqueued', ephemeral: true });
     }
   };
 
   if (subcommandGroup === 'controls') {
-    await joinVc(interaction.member as GuildMember, interaction.guild, audioPlayer, onVcReady);
+    const result = await joinVc(interaction.member as GuildMember, interaction.guild, audioPlayer, onVcReady);
+
+    if (!result) {
+      await interaction.reply({ content: 'You need to be in a VC to use this command', ephemeral: true });
+    }
   } else {
     await onReady();
   }
