@@ -8,7 +8,7 @@ specifiers:
   '@types/node': 18.7.14
   discord.js: ^14.1.2
   dotenv: 16.0.2
-  nodemon: 2.0.19
+  nodemon: 2.0.20
   sodium-native: 3.4.1
   ts-node: 10.9.1
   tsconfig-paths: 4.1.0
@@ -26,7 +26,7 @@ devDependencies:
   '@swc/core': 1.2.247
   '@types/node': 18.7.14
   dotenv: 16.0.2
-  nodemon: 2.0.19
+  nodemon: 2.0.20
   sodium-native: 3.4.1
   ts-node: 10.9.1_33pqc7c3es2sr544n2mb7xco6u
   tsconfig-paths: 4.1.0
@@ -742,11 +742,10 @@ packages:
     hasBin: true
     dev: true
 
-  /nodemon/2.0.19:
-    resolution: {integrity: sha512-4pv1f2bMDj0Eeg/MhGqxrtveeQ5/G/UVe9iO6uTZzjnRluSA4PVWf8CW99LUPwGB3eNIA7zUFoP77YuI7hOc0A==}
+  /nodemon/2.0.20:
+    resolution: {integrity: sha512-Km2mWHKKY5GzRg6i1j5OxOHQtuvVsgskLfigG25yTtbyfRGn/GNvIbRyOf1PSCKJ2aT/58TiuUsuOU5UToVViw==}
     engines: {node: '>=8.10.0'}
     hasBin: true
-    requiresBuild: true
     dependencies:
       chokidar: 3.5.3
       debug: 3.2.7_supports-color@5.5.0

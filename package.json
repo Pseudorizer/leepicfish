@@ -21,7 +21,7 @@
     "@swc/core": "1.2.247",
     "@types/node": "18.7.14",
     "dotenv": "16.0.2",
-    "nodemon": "2.0.19",
+    "nodemon": "2.0.20",
     "sodium-native": "3.4.1",
     "ts-node": "10.9.1",
     "tsconfig-paths": "4.1.0",
