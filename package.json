@@ -22,7 +22,7 @@
     "@types/node": "^18.15.11",
     "dotenv": "^16.0.3",
     "nodemon": "^2.0.22",
-    "sodium-native": "^3.4.1",
+    "sodium-native": "^4.0.1",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.0.4",
