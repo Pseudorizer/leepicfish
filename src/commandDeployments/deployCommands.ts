@@ -1,13 +1,14 @@
-import {Routes} from 'discord.js';
-import {REST} from '@discordjs/rest';
+import {Routes, REST} from 'discord.js';
 import musicCommands from './musicCommands.js';
 import env from '../getEnv.js';
+import transcodeCommands from './transcodeCommands.js';
 
 const commands = [
   musicCommands,
+  transcodeCommands
 ].map(command => command.toJSON());
 
-const rest = new REST({ version: '10' }).setToken(env.token);
+const rest = new REST().setToken(env.token);
 
 try {
   await rest.put(Routes.applicationGuildCommands(env.clientId, env.guildId),

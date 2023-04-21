@@ -1,6 +1,7 @@
 import {Client, GatewayIntentBits} from 'discord.js';
 import env from './getEnv.js';
 import MusicCommands from './music/musicCommands.js';
+import TranscodeCommands from './transcode/transcodeCommands.js';
 
 console.log('Starting bot...');
 
@@ -22,6 +23,8 @@ client.on('interactionCreate', async interaction => {
 
   if (commandName === 'music') {
     await MusicCommands(interaction, subcommandGroup ?? '', subcommand);
+  } else if (commandName === 'transcode') {
+    await TranscodeCommands(interaction, subcommandGroup ?? '', subcommand)
   }
 });
 
