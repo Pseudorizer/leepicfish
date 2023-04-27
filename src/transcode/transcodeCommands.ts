@@ -3,53 +3,53 @@ import {ChatInputCommandInteraction} from 'discord.js';
 export const languages = {
   morse_code: {
     name: 'Morse Code',
-    // NEED TO FIGURE OUT HOW TF SPACES WORKc
     translations: {
-      "0": "----- ",
-      "1": ".---- ",
-      "2": "..--- ",
-      "3": "...-- ",
-      "4": "....- ",
-      "5": "..... ",
-      "6": "-.... ",
-      "7": "--... ",
-      "8": "---.. ",
-      "9": "----. ",
-      "a": ".- ",
-      "b": "-... ",
-      "c": "-.-. ",
-      "d": "-.. ",
-      "e": ". ",
-      "f": "..-. ",
-      "g": "--. ",
-      "h": ".... ",
-      "i": ".. ",
-      "j": ".--- ",
-      "k": "-.- ",
-      "l": ".-.. ",
-      "m": "-- ",
-      "n": "-. ",
-      "o": "--- ",
-      "p": ".--. ",
-      "q": "--.- ",
-      "r": ".-. ",
-      "s": "... ",
-      "t": "- ",
-      "u": "..- ",
-      "v": "...- ",
-      "w": ".-- ",
-      "x": "-..- ",
-      "y": "-.-- ",
-      "z": "--.. ",
-      ".": ".-.-.- ",
-      ",": "--..-- ",
-      "?": "..--.. ",
-      "!": "-.-.-- ",
-      "-": "-....- ",
-      "/": "-..-. ",
-      "@": ".--.-. ",
-      "(": "-.--. ",
-      ")": "-.--.- ",
+      "0": "-----",
+      "1": ".----",
+      "2": "..---",
+      "3": "...--",
+      "4": "....-",
+      "5": ".....",
+      "6": "-....",
+      "7": "--...",
+      "8": "---..",
+      "9": "----.",
+      "a": ".-",
+      "b": "-...",
+      "c": "-.-.",
+      "d": "-..",
+      "e": ".",
+      "f": "..-.",
+      "g": "--.",
+      "h": "....",
+      "i": "..",
+      "j": ".---",
+      "k": "-.-",
+      "l": ".-..",
+      "m": "--",
+      "n": "-.",
+      "o": "---",
+      "p": ".--.",
+      "q": "--.-",
+      "r": ".-.",
+      "s": "...",
+      "t": "-",
+      "u": "..-",
+      "v": "...-",
+      "w": ".--",
+      "x": "-..-",
+      "y": "-.--",
+      "z": "--..",
+      ".": ".-.-.-",
+      ",": "--..--",
+      "?": "..--..",
+      "!": "-.-.--",
+      "-": "-....-",
+      "/": "-..-.",
+      "@": ".--.-.",
+      "(": "-.--.",
+      ")": "-.--.-",
+      " ": "/",
     }
   },
   enchantment_table: {
@@ -90,9 +90,16 @@ const encode = (text: string, language: string) => {
     return text;
   }
 
-  return text.toLowerCase().split("").map(char => {
-    return languages[language].translations[char] ? languages[language].translations[char] : char;
-  }).join("");
+  if (language === 'morse_code'){
+    return text.toLowerCase().split("").map(char => {
+      return languages[language].translations[char] ? languages[language].translations[char] + ' ' : char;
+    }).join("").trim();
+  } else {
+    return text.toLowerCase().split("").map(char => {
+      return languages[language].translations[char] ? languages[language].translations[char] : char;
+    }).join("");
+  }
+
 }
 
 const decode = (text: string, language: string) => {
@@ -106,7 +113,7 @@ const decode = (text: string, language: string) => {
 
   if (language === 'morse_code'){
     return text.toLowerCase().split(" ").map(char => {
-      return flipped[char + ' '] ? flipped[char + ' '] : char;
+      return flipped[char] ? flipped[char] : char;
     }).join("");
   } else {
     return text.toLowerCase().split("").map(char => {
@@ -114,15 +121,14 @@ const decode = (text: string, language: string) => {
     }).join("");
   }
 }
-
-const TranscodeCommands = async (interaction: ChatInputCommandInteraction, subCommandGroup: string, subCommand) => {
+const TranscodeCommands = async (interaction: ChatInputCommandInteraction, subCommandGroup: string) => {
   if (!interaction.member || !interaction.guild || !interaction.options.get('function') || !interaction.options.get('language') || !interaction.options.get('text')) {
     return;
   }
 
-  const language = interaction.options.getString('language');
-  const text = interaction.options.getString('text');
-  const func = interaction.options.getString('function');
+  const language = interaction.options.getString('language')?.toLowerCase();
+  const text = interaction.options.getString('text')?.toLowerCase();
+  const func = interaction.options.getString('function')?.toLowerCase();
 
   if (func === 'decode') {
     await interaction.reply(decode(text ?? '', language ?? ''))

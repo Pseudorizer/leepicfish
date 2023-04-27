@@ -24,7 +24,7 @@ client.on('interactionCreate', async interaction => {
   if (commandName === 'music') {
     await MusicCommands(interaction, subcommandGroup ?? '', subcommand);
   } else if (commandName === 'transcode') {
-    await TranscodeCommands(interaction, subcommandGroup ?? '', subcommand)
+    await TranscodeCommands(interaction, subcommandGroup ?? '')
   }
 });
 
